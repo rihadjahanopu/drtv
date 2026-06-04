@@ -16,7 +16,6 @@ export default function IPTVPlayer() {
   const hlsRef = useRef<Hls | null>(null);
   const { currentChannel } = usePlayerStore();
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [paused, setPaused] = useState(false);
   
   // Quality state
@@ -40,7 +39,6 @@ export default function IPTVPlayer() {
 
     destroyHls();
     setError(null);
-    setIsLoading(true);
     setPaused(false);
 
     const isMp4 = url.toLowerCase().endsWith('.mp4');
@@ -50,7 +48,6 @@ export default function IPTVPlayer() {
       video.play().catch(e => {
         if (e.name !== 'AbortError') {
           setPaused(true);
-          setIsLoading(false);
         }
       });
       return;
@@ -79,7 +76,6 @@ export default function IPTVPlayer() {
         video.play().catch(e => {
           if (e.name !== 'AbortError') {
             setPaused(true);
-            setIsLoading(false);
           }
         });
       });
@@ -94,7 +90,6 @@ export default function IPTVPlayer() {
               hls.recoverMediaError();
               break;
             default:
-              setIsLoading(false);
               setError('Stream failed to load. Please try another channel.');
               destroyHls();
           }
@@ -106,12 +101,10 @@ export default function IPTVPlayer() {
       video.play().catch(e => {
         if (e.name !== 'AbortError') {
           setPaused(true);
-          setIsLoading(false);
         }
       });
     } else {
       setError('Your browser does not support HLS streams.');
-      setIsLoading(false);
     }
   }, [destroyHls]);
 
@@ -128,30 +121,37 @@ export default function IPTVPlayer() {
   }, [destroyHls]);
 
   // Video element events
+  // Video element events
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const onWaiting = () => setIsLoading(true);
     const onPlaying = () => { setIsLoading(false); setError(null); };
     const onPause = () => setPaused(true);
     const onPlay = () => { setPaused(false); setIsLoading(false); };
+    const onCanPlay = () => { setIsLoading(false); setError(null); };
+    const onTimeUpdate = () => {
+      // If time is advancing, we are definitely playing, clear any stuck loading state
+      setIsLoading(prev => prev ? false : prev);
+    };
     const onError = () => {
       setIsLoading(false);
       setError('Playback error. The stream may be expired.');
     };
 
-    video.addEventListener('waiting', onWaiting);
     video.addEventListener('playing', onPlaying);
     video.addEventListener('pause', onPause);
     video.addEventListener('play', onPlay);
+    video.addEventListener('canplay', onCanPlay);
+    video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('error', onError);
 
     return () => {
-      video.removeEventListener('waiting', onWaiting);
       video.removeEventListener('playing', onPlaying);
       video.removeEventListener('pause', onPause);
       video.removeEventListener('play', onPlay);
+      video.removeEventListener('canplay', onCanPlay);
+      video.removeEventListener('timeupdate', onTimeUpdate);
       video.removeEventListener('error', onError);
     };
   }, []);
