@@ -3,6 +3,7 @@
 import { usePlayerStore } from "@/store/usePlayerStore";
 import Hls from "hls.js";
 import { AlertCircle, Check, Play, Settings } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface QualityLevel {
@@ -275,9 +276,11 @@ export default function IPTVPlayer() {
 			<div className="absolute top-0 left-0 right-0 p-4 bg-linear-to-b from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex justify-between items-start pointer-events-none">
 				<div className="flex items-center gap-3">
 					{currentChannel.logo && (
-						<img
+						<Image
 							src={currentChannel.logo}
 							alt={currentChannel.name}
+							width={48}
+							height={48}
 							className="w-12 h-12 object-contain bg-white/5 rounded-xl p-2 border border-white/10"
 						/>
 					)}
