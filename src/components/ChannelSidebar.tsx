@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import CategoryFilter from "./CategoryFilter";
 import ChannelGrid from "./ChannelGrid";
 import SearchBar from "./SearchBar";
@@ -29,12 +30,15 @@ export default function ChannelSidebar() {
 							/>
 						</svg>
 					</div>
-					TV ME
+					Dr TV
 				</h1>
-				{/* application caretor info */}
-				<div className="bottom-4 right-4 text-white/80 text-xs pointer-events-none">
-					Made with ❤️ by Rihad
-				</div>
+				{/* application caretor info  gradind color */}
+
+				<Link
+					href="https://www.rihadjahanopu.com"
+					className="cursor-pointer bg-gradient-to-b from-blue-400 via-indigo-500 to-purple-500 py-2 px-2 rounded-lg font-bold shadow-lg shadow-blue-500/25">
+					Developed by Rihad
+				</Link>
 			</div>
 
 			<div className="flex-shrink-0 bg-zinc-950/50">
