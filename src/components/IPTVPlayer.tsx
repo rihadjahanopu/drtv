@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
 import { usePlayerStore } from '@/store/usePlayerStore';
-import { AlertCircle, Loader2, Play, Settings, Check } from 'lucide-react';
+import { AlertCircle, Play, Settings, Check } from 'lucide-react';
 
 interface QualityLevel {
   index: number;
@@ -56,8 +56,18 @@ export default function IPTVPlayer() {
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 30,
+        lowLatencyMode: false,         // Disable low-latency to prioritize quality over speed
+        startLevel: 0,                 // Start at highest quality level (sorted desc)
+        abrEwmaDefaultEstimate: 5000000, // Assume 5Mbps bandwidth to start HD immediately
+        capLevelToPlayerSize: false,   // Don't cap quality based on player size
+        maxBufferLength: 60,           // Buffer 60 seconds for smooth playback
+        maxMaxBufferLength: 120,       // Allow up to 120 seconds buffer
+        backBufferLength: 60,
+        abrBandWidthFactor: 0.95,      // Use 95% of measured bandwidth
+        abrBandWidthUpFactor: 0.7,     // More aggressive upscaling
+        fragLoadingMaxRetry: 6,
+        manifestLoadingMaxRetry: 3,
+        levelLoadingMaxRetry: 4,
       });
       hlsRef.current = hls;
 
@@ -229,12 +239,6 @@ export default function IPTVPlayer() {
         </div>
       )}
 
-      {isLoading && !error && !paused && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-10 pointer-events-none transition-all duration-300">
-          <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-          <p className="text-white font-medium tracking-wide">Loading stream...</p>
-        </div>
-      )}
 
       {paused && !error && (
         <div
