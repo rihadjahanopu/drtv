@@ -10,7 +10,7 @@ export default function CategoryFilter() {
 
 	const groups = useMemo(() => {
 		const uniqueGroups = new Set(channels.map((c) => c.group).filter(Boolean));
-		return ["All", "Favorites", ...Array.from(uniqueGroups).sort()];
+		return ["All", "Favorites", "Bangla", "Sports", "Movies", "News"];
 	}, [channels]);
 
 	return (
@@ -21,7 +21,7 @@ export default function CategoryFilter() {
 						key={group}
 						onClick={() => setActiveGroup(group)}
 						className={cn(
-							"flex-shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-1.5 border",
+							"shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-1.5 border",
 							activeGroup === group ?
 								"bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)] scale-105"
 							:	"bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-white"
