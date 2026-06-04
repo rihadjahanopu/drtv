@@ -10,7 +10,15 @@ export default function CategoryFilter() {
 
 	const groups = useMemo(() => {
 		const uniqueGroups = new Set(channels.map((c) => c.group).filter(Boolean));
-		return ["All", "Favorites", "Bangla", "Sports", "Movies", "News"];
+		return [
+			"All",
+			"Favorites",
+			"Bangla",
+			"Sports",
+			"Movies",
+			"News",
+			"Indian Bangla",
+		];
 	}, [channels]);
 
 	return (
