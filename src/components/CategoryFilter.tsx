@@ -18,6 +18,7 @@ export default function CategoryFilter() {
 			"Movies",
 			"News",
 			"Indian Bangla",
+			"Other",
 		];
 	}, [channels]);
 
