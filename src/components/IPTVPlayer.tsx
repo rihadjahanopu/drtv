@@ -131,37 +131,26 @@ export default function IPTVPlayer() {
   }, [destroyHls]);
 
   // Video element events
-  // Video element events
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const onPlaying = () => { setIsLoading(false); setError(null); };
+    const onPlaying = () => { setError(null); setPaused(false); };
     const onPause = () => setPaused(true);
-    const onPlay = () => { setPaused(false); setIsLoading(false); };
-    const onCanPlay = () => { setIsLoading(false); setError(null); };
-    const onTimeUpdate = () => {
-      // If time is advancing, we are definitely playing, clear any stuck loading state
-      setIsLoading(prev => prev ? false : prev);
-    };
+    const onPlay = () => { setPaused(false); setError(null); };
     const onError = () => {
-      setIsLoading(false);
       setError('Playback error. The stream may be expired.');
     };
 
     video.addEventListener('playing', onPlaying);
     video.addEventListener('pause', onPause);
     video.addEventListener('play', onPlay);
-    video.addEventListener('canplay', onCanPlay);
-    video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('error', onError);
 
     return () => {
       video.removeEventListener('playing', onPlaying);
       video.removeEventListener('pause', onPause);
       video.removeEventListener('play', onPlay);
-      video.removeEventListener('canplay', onCanPlay);
-      video.removeEventListener('timeupdate', onTimeUpdate);
       video.removeEventListener('error', onError);
     };
   }, []);
