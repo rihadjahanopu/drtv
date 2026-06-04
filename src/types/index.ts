@@ -12,10 +12,12 @@ export interface PlayerState {
   recentChannels: Channel[];
   searchQuery: string;
   activeGroup: string;
+  viewMode: 'grid' | 'list';
   
   setChannels: (channels: Channel[]) => void;
   setCurrentChannel: (channel: Channel) => void;
   toggleFavorite: (channel: Channel) => void;
   setSearchQuery: (query: string) => void;
   setActiveGroup: (group: string) => void;
+  setViewMode: (viewMode: 'grid' | 'list') => void;
 }

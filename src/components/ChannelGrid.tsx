@@ -6,7 +6,7 @@ import ChannelCard from './ChannelCard';
 import { Search } from 'lucide-react';
 
 export default function ChannelGrid() {
-  const { channels, searchQuery, activeGroup, favorites } = usePlayerStore();
+  const { channels, searchQuery, activeGroup, favorites, viewMode } = usePlayerStore();
   const [displayCount, setDisplayCount] = useState(50);
 
   const filteredChannels = useMemo(() => {
@@ -54,11 +54,15 @@ export default function ChannelGrid() {
       className="flex-1 overflow-y-auto px-4 pb-6 pt-2 space-y-2 custom-scrollbar scroll-smooth"
       onScroll={handleScroll}
     >
-      <div className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur-md pb-3 pt-1 text-xs font-bold text-zinc-400 uppercase tracking-widest flex justify-between items-center px-1">
+      <div className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur-md pb-3 pt-1 text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest flex justify-between items-center px-1">
         <span>{activeGroup === 'All' ? 'All Channels' : activeGroup}</span>
-        <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-full text-[10px] border border-zinc-700/50">{filteredChannels.length}</span>
+        <span className="bg-zinc-900 text-zinc-400 px-2 py-0.5 rounded-full text-[9px] border border-zinc-800/50">{filteredChannels.length}</span>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+      <div className={
+        viewMode === 'grid' 
+          ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-2 gap-3" 
+          : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-1 gap-2.5"
+      }>
         {filteredChannels.slice(0, displayCount).map((channel, idx) => (
           <ChannelCard key={`${channel.url}-${idx}`} channel={channel} />
         ))}

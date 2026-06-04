@@ -1,6 +1,6 @@
+import { PlayerState } from "@/types";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Channel, PlayerState } from "@/types";
 
 export const usePlayerStore = create<PlayerState>()(
 	persist(
@@ -19,11 +19,16 @@ export const usePlayerStore = create<PlayerState>()(
 			searchQuery: "",
 			activeGroup: "All",
 
-			// 🟢 ২. এখানেও সামান্য পরিবর্তন করতে হবে যেন প্লেলিস্ট লোড হলেও এটি মুছে না যায়
+			// 🟢 ১. নতুন স্টেট যুক্ত করা হলো (আপনার টাইপ ডেফিনিশন অনুযায়ী ভ্যালু 'grid' বা 'list' হতে পারে)
+			viewMode: "grid",
+
 			setChannels: (channels) =>
 				set((state) => ({
 					channels,
-					currentChannel: state.currentChannel || channels[0] || null,
+					currentChannel:
+						state.currentChannel?.url ?
+							state.currentChannel
+						:	channels[0] || state.currentChannel,
 				})),
 
 			setCurrentChannel: (channel) => {
@@ -50,12 +55,18 @@ export const usePlayerStore = create<PlayerState>()(
 
 			setSearchQuery: (searchQuery) => set({ searchQuery }),
 			setActiveGroup: (activeGroup) => set({ activeGroup }),
+
+			// 🟢 ২. ভিউ মোড পরিবর্তন করার ফাংশন যুক্ত করা হলো
+			setViewMode: (viewMode) => set({ viewMode }),
 		}),
 		{
 			name: "iptv-player-storage",
 			partialize: (state) => ({
+				currentChannel: state.currentChannel,
 				favorites: state.favorites,
 				recentChannels: state.recentChannels,
+				// অপশনাল: ইউজার যদি চান পেজ রিফ্রেশ করলেও তার গ্রিড/লিস্ট ভিউ সিলেকশন বজায় থাকুক, তবে নিচের লাইনটি আনকমেন্ট করুন
+				// viewMode: state.viewMode,
 			}),
 		}
 	)

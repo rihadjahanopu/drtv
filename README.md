@@ -1,36 +1,165 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+# 📺 DR TV (tvme)
 
-First, run the development server:
+**A Next-Generation Web IPTV Player with Chromecast & PWA Support**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)](https://react.dev/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-v4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![Zustand](https://img.shields.io/badge/Zustand-State-yellow?style=for-the-badge)](https://zustand-demo.pmnd.rs/)
+[![PWA Ready](https://img.shields.io/badge/PWA-Ready-purple?style=for-the-badge&logo=pwa)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
+
+</div>
+
+<br/>
+
+## 🚀 Overview
+
+**DR TV** is an advanced, high-performance web-based IPTV player built with cutting-edge web technologies. It allows users to stream live TV seamlessly with full quality controls, modern aesthetics, and the ability to cast directly to smart TVs using Google Chromecast.
+
+Built as a **Progressive Web App (PWA)**, DR TV can be installed on desktop and mobile devices for a native app-like experience.
+
+---
+
+## Live Demo
+
+[Demo for Vercel](https://rihadtv.vercel.app/)
+[Demo for Render](https://drtv.onrender.com/)
+
+---
+
+## ✨ Key Features
+
+- **🎥 Advanced HLS Playback:** Rock-solid streaming utilizing `hls.js`, supporting adaptive bitrate streaming and manual quality selection (1080p, 720p, etc).
+- **📡 Google Cast Integration:** Cast your favorite live channels directly to your Chromecast-enabled TV.
+- **📱 PWA Enabled:** Installable on any mobile or desktop device. Features aggressive frontend caching and offline resilience.
+- **⚡ Next.js 16 & React 19:** Utilizing the latest App Router, React Compiler, and Turbopack for lightning-fast compilation and runtime performance.
+- **💅 Modern UI/UX:** A stunning, glassmorphism-inspired interface powered by **Tailwind CSS v4** and beautiful **Lucide React** icons.
+- **🧠 Global State Management:** Predictable, boilerplate-free state management powered by **Zustand**.
+- **🚦 Smart Rewrites:** Integrated API proxying for circumventing CORS issues and securely accessing remote IPTV streams.
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology                                                                | Description                                 |
+| ------------------------------------------------------------------------- | ------------------------------------------- |
+| **[Next.js 16](https://nextjs.org/)**                                     | React Framework with App Router & Turbopack |
+| **[React 19](https://react.dev/)**                                        | Library for building user interfaces        |
+| **[Tailwind CSS v4](https://tailwindcss.com/)**                           | Utility-first styling framework             |
+| **[Zustand](https://github.com/pmndrs/zustand)**                          | Bear-necessities state management           |
+| **[hls.js](https://github.com/video-dev/hls.js/)**                        | JavaScript HLS client for web video         |
+| **[@ducanh2912/next-pwa](https://github.com/DuCanhGH/next-pwa)**          | Zero-config PWA Plugin for Next.js          |
+| **[Google Cast SDK](https://developers.google.com/cast/docs/web_sender)** | Framework for sending media to Chromecast   |
+
+---
+
+## 🏎️ Getting Started
+
+### Prerequisites
+
+Ensure you have **Node.js 20+** installed on your system.
+
+### Installation
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/yourusername/drtv.git
+   cd drtv
+   ```
+
+2. **Install dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Start the Development Server (with Turbopack):**
+
+   ```bash
+   npm run dev
+   ```
+
+4. **Access the application:**
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 📺 How to Use Chromecast
+
+1. Ensure your casting device (Smart TV / Chromecast dongle) is on the **same Wi-Fi network** as your browser.
+2. Open the app in a supported browser (Google Chrome or Microsoft Edge).
+3. Select a live TV channel from the list.
+4. Click the **Cast icon** located in the player controls overlay.
+5. Select your desired TV from the browser popup.
+6. The stream will automatically transfer to your TV!
+
+---
+
+## 📱 Installing the PWA
+
+### On Desktop (Chrome/Edge)
+
+1. Open the app in your browser.
+2. Look for the **"Install"** icon in the right side of the address bar.
+3. Click Install. DR TV will now be available as a standalone app in your launcher.
+
+### On Mobile (iOS/Android)
+
+1. Open the app in Safari (iOS) or Chrome (Android).
+2. Tap the **Share** button (iOS) or the **3-dot menu** (Android).
+3. Select **"Add to Home Screen"**.
+
+---
+
+## 📂 Project Structure
+
+Here is an overview of the core project structure:
+
+```text
+drtv/
+├── public/                 # Static assets (SVG, icons for PWA, etc.)
+│   ├── favicon.ico
+│   └── globe.svg
+├── src/
+│   ├── app/                # Next.js App Router
+│   │   ├── globals.css     # Global Tailwind CSS styles
+│   │   ├── layout.tsx      # Root layout, Google Cast & PWA Meta
+│   │   ├── manifest.ts     # PWA Manifest configuration
+│   │   └── page.tsx        # Main application page
+│   ├── components/         # Reusable React components
+│   │   └── IPTVPlayer.tsx  # Core video player with HLS & Cast logic
+│   └── store/              # Global state management
+│       └── usePlayerStore.ts # Zustand store for active channels
+├── next.config.ts          # Next.js, PWA, and Proxy API configuration
+├── package.json            # Project dependencies and scripts
+└── tailwind.config.ts      # Tailwind CSS configuration (if not using v4 direct imports)
 ```
 
-Open [Live Link](https://drtv.onrender.com/) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🔧 Architecture & Configuration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### API Proxy Configuration
 
-## Learn More
+To bypass browser CORS restrictions when fetching live M3U8 playlists from remote servers, DR TV utilizes Next.js rewrites.
+You can find and modify the remote server IP configurations inside `next.config.ts`:
 
-To learn more about Next.js, take a look at the following resources:
+```typescript
+async rewrites() {
+    return [
+        {
+            source: "/api/live/:path*",
+            destination: "http://YOUR_IPTV_SERVER_IP/:path*",
+        },
+    ];
+}
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+<div align="center">
+  <p>Built with ❤️ by Rihad</p>
+</div>

@@ -2,8 +2,7 @@
 
 import { usePlayerStore } from "@/store/usePlayerStore";
 import Hls from "hls.js";
-import { AlertCircle, Check, Play, Settings } from "lucide-react";
-import Image from "next/image";
+import { AlertCircle, Cast, Check, Play, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface QualityLevel {
@@ -24,6 +23,53 @@ export default function IPTVPlayer() {
 	const [currentLevel, setCurrentLevel] = useState<number>(-1);
 	const [showSettings, setShowSettings] = useState(false);
 
+	// Cast state
+	const [isCasting, setIsCasting] = useState(false);
+	const [castDeviceName, setCastDeviceName] = useState<string | null>(null);
+
+	useEffect(() => {
+		const checkCast = setInterval(() => {
+			if (typeof cast !== "undefined" && cast.framework) {
+				clearInterval(checkCast);
+				const castContext = cast.framework.CastContext.getInstance();
+
+				const handleCastStateChange = (event: any) => {
+					if (
+						event.sessionState ===
+							cast.framework.SessionState.SESSION_STARTED ||
+						event.sessionState === cast.framework.SessionState.SESSION_RESUMED
+					) {
+						setIsCasting(true);
+						const session = castContext.getCurrentSession();
+						if (session && session.getCastDevice()) {
+							setCastDeviceName(session.getCastDevice().friendlyName);
+						}
+						// If we are currently playing something locally, move it to cast
+						if (currentChannel) {
+							loadChannel(currentChannel.url);
+						}
+					} else if (
+						event.sessionState === cast.framework.SessionState.SESSION_ENDED
+					) {
+						setIsCasting(false);
+						setCastDeviceName(null);
+						// Resume locally if we stopped casting
+						if (currentChannel) {
+							loadChannel(currentChannel.url);
+						}
+					}
+				};
+
+				castContext.addEventListener(
+					cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
+					handleCastStateChange
+				);
+			}
+		}, 500);
+
+		return () => clearInterval(checkCast);
+	}, []);
+
 	const destroyHls = useCallback(() => {
 		if (hlsRef.current) {
 			hlsRef.current.destroy();
@@ -36,10 +82,54 @@ export default function IPTVPlayer() {
 
 	const loadChannel = useCallback(
 		(url: string) => {
+			// 1. Check if chrome, cast, and chrome.cast.media are fully available
+			if (
+				typeof cast !== "undefined" &&
+				cast.framework &&
+				typeof chrome !== "undefined" &&
+				chrome.cast?.media
+			) {
+				const session =
+					cast.framework.CastContext.getInstance().getCurrentSession();
+				if (session) {
+					// We are casting, play on Cast device instead of local
+					setIsCasting(true);
+
+					const mediaInfo = new chrome.cast.media.MediaInfo(
+						url,
+						"application/x-mpegurl"
+					);
+					if (currentChannel) {
+						const metadata = new chrome.cast.media.GenericMediaMetadata();
+						metadata.title = currentChannel.name;
+						if (currentChannel.logo) {
+							metadata.images = [new chrome.cast.Image(currentChannel.logo)];
+						}
+						mediaInfo.metadata = metadata;
+					}
+					const request = new chrome.cast.media.LoadRequest(mediaInfo);
+					session.loadMedia(request).catch(console.error);
+
+					// Stop local playback
+					destroyHls();
+					const video = videoRef.current;
+					if (video) {
+						video.pause();
+						video.removeAttribute("src");
+						video.load();
+					}
+					setError(null);
+					setPaused(false);
+					return;
+				}
+			} // <--- Ekhone if logic shesh
+
+			// Baki local playback-er code ekhon nicher dike thikbhabe run hobe
 			const video = videoRef.current;
 			if (!video) return;
 
 			destroyHls();
+			setIsCasting(false);
 			setError(null);
 			setPaused(false);
 
@@ -58,15 +148,15 @@ export default function IPTVPlayer() {
 			if (Hls.isSupported()) {
 				const hls = new Hls({
 					enableWorker: true,
-					lowLatencyMode: false, // Disable low-latency to prioritize quality over speed
-					startLevel: 0, // Start at highest quality level (sorted desc)
-					abrEwmaDefaultEstimate: 5000000, // Assume 5Mbps bandwidth to start HD immediately
-					capLevelToPlayerSize: false, // Don't cap quality based on player size
-					maxBufferLength: 60, // Buffer 60 seconds for smooth playback
-					maxMaxBufferLength: 120, // Allow up to 120 seconds buffer
+					lowLatencyMode: false,
+					startLevel: 0,
+					abrEwmaDefaultEstimate: 5000000,
+					capLevelToPlayerSize: false,
+					maxBufferLength: 60,
+					maxMaxBufferLength: 120,
 					backBufferLength: 60,
-					abrBandWidthFactor: 0.95, // Use 95% of measured bandwidth
-					abrBandWidthUpFactor: 0.7, // More aggressive upscaling
+					abrBandWidthFactor: 0.95,
+					abrBandWidthUpFactor: 0.7,
 					fragLoadingMaxRetry: 6,
 					manifestLoadingMaxRetry: 3,
 					levelLoadingMaxRetry: 4,
@@ -77,7 +167,6 @@ export default function IPTVPlayer() {
 				hls.attachMedia(video);
 
 				hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-					// Map and sort levels by height descending for the UI
 					const availableLevels = data.levels
 						.map((l, index) => ({
 							index,
@@ -87,7 +176,7 @@ export default function IPTVPlayer() {
 						.sort((a, b) => b.height - a.height);
 
 					setLevels(availableLevels);
-					setCurrentLevel(-1); // Default to Auto
+					setCurrentLevel(-1);
 
 					video.play().catch((e) => {
 						if (e.name !== "AbortError") {
@@ -112,7 +201,6 @@ export default function IPTVPlayer() {
 					}
 				});
 			} else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-				// Native HLS (Safari) does not support manual quality switching easily
 				video.src = url;
 				video.play().catch((e) => {
 					if (e.name !== "AbortError") {
@@ -123,7 +211,7 @@ export default function IPTVPlayer() {
 				setError("Your browser does not support HLS streams.");
 			}
 		},
-		[destroyHls]
+		[destroyHls, currentChannel]
 	);
 
 	// Load new channel when it changes
@@ -209,7 +297,7 @@ export default function IPTVPlayer() {
 
 	if (!currentChannel) {
 		return (
-			<div className="w-full h-full min-h-[50vh] flex flex-col items-center justify-center bg-zinc-900/50 backdrop-blur-md rounded-2xl border border-zinc-800/50 shadow-2xl">
+			<div className="w-full h-full min-h-[50vh] flex flex-col items-center justify-center bg-zinc-900/50 backdrop-blur-md rounded-2xl border border-zinc-800/50 shadow-2xl ">
 				<div className="text-zinc-600 mb-6 bg-zinc-800/50 p-6 rounded-full border border-zinc-700/50">
 					<svg
 						className="w-16 h-16"
@@ -235,7 +323,7 @@ export default function IPTVPlayer() {
 	}
 
 	return (
-		<div className="relative w-full h-full rounded-2xl overflow-hidden bg-black shadow-2xl group border border-zinc-800/50">
+		<div className="relative w-full h-full overflow-hidden bg-black shadow-2xl group border border-zinc-800/50 pt-20 md:pt-0">
 			<video
 				ref={videoRef}
 				className="w-full h-full object-contain"
@@ -243,7 +331,7 @@ export default function IPTVPlayer() {
 				controls
 			/>
 
-			{error && (
+			{error && !isCasting && (
 				<div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-20 p-6 text-center backdrop-blur-sm">
 					<AlertCircle className="w-16 h-16 text-red-500 mb-4 animate-pulse" />
 					<p className="text-white font-medium text-lg mb-2">Playback Error</p>
@@ -260,7 +348,24 @@ export default function IPTVPlayer() {
 				</div>
 			)}
 
-			{paused && !error && (
+			{isCasting && (
+				<div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/90 z-20 p-6 text-center backdrop-blur-md">
+					<div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
+						<svg
+							className="w-10 h-10 text-blue-500"
+							fill="currentColor"
+							viewBox="0 0 24 24">
+							<path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm0-4v2c6.08 0 11 4.93 11 11h2c0-7.18-5.82-13-13-13zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+						</svg>
+					</div>
+					<h2 className="text-2xl font-bold text-white mb-2">
+						Casting to {castDeviceName || "TV"}
+					</h2>
+					<p className="text-zinc-400">Playing {currentChannel.name}</p>
+				</div>
+			)}
+
+			{paused && !error && !isCasting && (
 				<div
 					onClick={handlePlay}
 					className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer bg-black/30">
@@ -273,14 +378,12 @@ export default function IPTVPlayer() {
 				</div>
 			)}
 
-			<div className="absolute top-0 left-0 right-0 p-4 bg-linear-to-b from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex justify-between items-start pointer-events-none">
+			<div className="absolute top-0 left-0 right-0 p-4 bg-linear-to-b from-black/80 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-10 flex justify-between items-start pointer-events-none">
 				<div className="flex items-center gap-3">
 					{currentChannel.logo && (
-						<Image
+						<img
 							src={currentChannel.logo}
 							alt={currentChannel.name}
-							width={48}
-							height={48}
 							className="w-12 h-12 object-contain bg-white/5 rounded-xl p-2 border border-white/10"
 						/>
 					)}
@@ -300,55 +403,93 @@ export default function IPTVPlayer() {
 					</div>
 				</div>
 
-				{/* Quality Selector */}
-				{levels.length > 0 && (
-					<div className="relative pointer-events-auto">
-						<button
-							onClick={() => setShowSettings(!showSettings)}
-							className="p-2 rounded-full bg-black/50 border border-white/10 text-white hover:bg-zinc-800 transition-colors backdrop-blur-md"
-							title="Quality Settings">
-							<Settings className="w-5 h-5" />
-						</button>
+				{/* Controls */}
+				<div className="flex items-center gap-3 relative pointer-events-auto">
+					<button
+						onClick={() => {
+							if (typeof cast !== "undefined" && cast.framework) {
+								try {
+									const castContext = cast.framework.CastContext.getInstance();
+									
+									// Ensure options are set before requesting session
+									// This prevents 'session_error' if initialization failed or hasn't happened yet
+									castContext.setOptions({
+										receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+										autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+									});
 
-						{showSettings && (
-							<div className="absolute right-0 top-12 w-48 bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-xl shadow-2xl py-2 z-50">
-								<div className="px-4 py-2 border-b border-zinc-800">
-									<h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-										Quality
-									</h3>
-								</div>
-								<div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
-									<button
-										onClick={() => handleQualityChange(-1)}
-										className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-zinc-800/80 transition-colors flex items-center justify-between">
-										<span>Auto</span>
-										{currentLevel === -1 && (
-											<Check className="w-4 h-4 text-blue-500" />
-										)}
-									</button>
-									{TARGET_RESOLUTIONS.map((res) => (
+									castContext.requestSession().catch((err: any) => {
+										// Ignore user cancellation, log other errors
+										if (err !== 'cancel') {
+											console.error("Cast session request failed:", err);
+										}
+									});
+								} catch (e: any) {
+									console.error("Cast error:", e);
+									alert(
+										"Please make sure you are using Google Chrome or Edge with Cast support enabled."
+									);
+								}
+							} else {
+								alert(
+									"Google Cast is not supported or not loaded in this browser."
+								);
+							}
+						}}
+						className="flex items-center justify-center w-10 h-10 rounded-full bg-black/50 border border-white/10 hover:bg-zinc-800 text-white transition-colors backdrop-blur-md mr-1"
+						title="Cast to TV">
+						<Cast className="w-5 h-5" />
+					</button>
+
+					{levels.length > 0 && !isCasting && (
+						<div className="relative">
+							<button
+								onClick={() => setShowSettings(!showSettings)}
+								className="p-2.5 rounded-full bg-black/50 border border-white/10 text-white hover:bg-zinc-800 transition-colors backdrop-blur-md flex items-center justify-center"
+								title="Quality Settings">
+								<Settings className="w-5 h-5" />
+							</button>
+
+							{showSettings && (
+								<div className="absolute right-0 top-12 w-48 bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-xl shadow-2xl py-2 z-50">
+									<div className="px-4 py-2 border-b border-zinc-800">
+										<h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+											Quality
+										</h3>
+									</div>
+									<div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
 										<button
-											key={res}
-											onClick={() => handleQualityChange(res)}
+											onClick={() => handleQualityChange(-1)}
 											className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-zinc-800/80 transition-colors flex items-center justify-between">
-											<span>
-												{res}p{" "}
-												{res >= 720 && (
-													<span className="ml-1 text-[10px] bg-red-600 px-1 py-0.5 rounded text-white font-bold">
-														HD
-													</span>
-												)}
-											</span>
-											{currentLevel === res && (
+											<span>Auto</span>
+											{currentLevel === -1 && (
 												<Check className="w-4 h-4 text-blue-500" />
 											)}
 										</button>
-									))}
+										{TARGET_RESOLUTIONS.map((res) => (
+											<button
+												key={res}
+												onClick={() => handleQualityChange(res)}
+												className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-zinc-800/80 transition-colors flex items-center justify-between">
+												<span>
+													{res}p{" "}
+													{res >= 720 && (
+														<span className="ml-1 text-[10px] bg-red-600 px-1 py-0.5 rounded text-white font-bold">
+															HD
+														</span>
+													)}
+												</span>
+												{currentLevel === res && (
+													<Check className="w-4 h-4 text-blue-500" />
+												)}
+											</button>
+										))}
+									</div>
 								</div>
-							</div>
-						)}
-					</div>
-				)}
+							)}
+						</div>
+					)}
+				</div>
 			</div>
 		</div>
 	);
