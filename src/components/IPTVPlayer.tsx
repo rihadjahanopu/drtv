@@ -49,7 +49,7 @@ export default function IPTVPlayer() {
       video.src = url;
       video.play().catch(e => {
         if (e.name !== 'AbortError') {
-          setError('Cannot play this stream. Try another channel.');
+          setPaused(true);
           setIsLoading(false);
         }
       });
@@ -78,7 +78,7 @@ export default function IPTVPlayer() {
         
         video.play().catch(e => {
           if (e.name !== 'AbortError') {
-            setError('Click the play button to start.');
+            setPaused(true);
             setIsLoading(false);
           }
         });
@@ -105,7 +105,7 @@ export default function IPTVPlayer() {
       video.src = url;
       video.play().catch(e => {
         if (e.name !== 'AbortError') {
-          setError('Cannot play this stream.');
+          setPaused(true);
           setIsLoading(false);
         }
       });
@@ -162,10 +162,31 @@ export default function IPTVPlayer() {
     video.play().catch(console.error);
   };
 
-  const handleQualityChange = (levelIndex: number) => {
+  const TARGET_RESOLUTIONS = [1080, 720, 480, 360];
+
+  const handleQualityChange = (targetHeight: number) => {
     if (hlsRef.current) {
-      hlsRef.current.currentLevel = levelIndex;
-      setCurrentLevel(levelIndex);
+      if (targetHeight === -1) {
+        hlsRef.current.currentLevel = -1;
+      } else if (levels.length > 0) {
+        // Find the closest available level
+        let bestIndex = levels[0].index;
+        let minDiff = Infinity;
+        
+        levels.forEach(l => {
+          // Guess height from bitrate if actual height is missing (e.g. 1500kbps ~ 720p)
+          const effectiveHeight = l.height > 0 ? l.height : (l.bitrate ? Math.round(l.bitrate / 2000) : 360);
+          const diff = Math.abs(targetHeight - effectiveHeight);
+          if (diff < minDiff) {
+            minDiff = diff;
+            bestIndex = l.index;
+          }
+        });
+        
+        hlsRef.current.currentLevel = bestIndex;
+      }
+      
+      setCurrentLevel(targetHeight);
       setShowSettings(false);
     }
   };
@@ -208,14 +229,14 @@ export default function IPTVPlayer() {
         </div>
       )}
 
-      {isLoading && !error && (
+      {isLoading && !error && !paused && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-10 pointer-events-none transition-all duration-300">
           <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
           <p className="text-white font-medium tracking-wide">Loading stream...</p>
         </div>
       )}
 
-      {paused && !error && !isLoading && (
+      {paused && !error && (
         <div
           onClick={handlePlay}
           className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer bg-black/30"
@@ -226,7 +247,7 @@ export default function IPTVPlayer() {
         </div>
       )}
 
-      <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex justify-between items-start">
+      <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex justify-between items-start pointer-events-none">
         <div className="flex items-center gap-3">
           {currentChannel.logo && (
             <img
@@ -238,18 +259,18 @@ export default function IPTVPlayer() {
           <div>
             <h2 className="text-white text-xl font-bold">{currentChannel.name}</h2>
             <div className="flex items-center gap-2 mt-1">
-              <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold rounded tracking-wider uppercase flex items-center gap-1">
+              <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold rounded tracking-wider uppercase flex items-center gap-1 shadow-sm shadow-red-900/50">
                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                 Live
               </span>
-              <span className="text-zinc-300 text-xs bg-white/10 px-2 py-0.5 rounded">{currentChannel.group}</span>
+              <span className="text-zinc-300 text-xs font-medium bg-white/10 px-2 py-0.5 rounded border border-white/5">{currentChannel.group}</span>
             </div>
           </div>
         </div>
         
         {/* Quality Selector */}
         {levels.length > 0 && (
-          <div className="relative">
+          <div className="relative pointer-events-auto">
             <button 
               onClick={() => setShowSettings(!showSettings)}
               className="p-2 rounded-full bg-black/50 border border-white/10 text-white hover:bg-zinc-800 transition-colors backdrop-blur-md"
@@ -271,17 +292,16 @@ export default function IPTVPlayer() {
                     <span>Auto</span>
                     {currentLevel === -1 && <Check className="w-4 h-4 text-blue-500" />}
                   </button>
-                  {levels.map((level) => (
+                  {TARGET_RESOLUTIONS.map((res) => (
                     <button
-                      key={level.index}
-                      onClick={() => handleQualityChange(level.index)}
+                      key={res}
+                      onClick={() => handleQualityChange(res)}
                       className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-zinc-800/80 transition-colors flex items-center justify-between"
                     >
                       <span>
-                        {level.height > 0 ? `${level.height}p` : level.bitrate ? `${Math.round(level.bitrate / 1000)} kbps` : `Level ${level.index}`}
-                        {level.height >= 720 && <span className="ml-1 text-[10px] bg-red-600 px-1 py-0.5 rounded text-white font-bold">HD</span>}
+                        {res}p {res >= 720 && <span className="ml-1 text-[10px] bg-red-600 px-1 py-0.5 rounded text-white font-bold">HD</span>}
                       </span>
-                      {currentLevel === level.index && <Check className="w-4 h-4 text-blue-500" />}
+                      {currentLevel === res && <Check className="w-4 h-4 text-blue-500" />}
                     </button>
                   ))}
                 </div>

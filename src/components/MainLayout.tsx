@@ -12,6 +12,14 @@ export default function MainLayout({ initialChannels }: { initialChannels: Chann
   useEffect(() => {
     if (initialChannels && initialChannels.length > 0) {
       setChannels(initialChannels);
+      
+      const state = usePlayerStore.getState();
+      if (!state.currentChannel) {
+        const defaultChannel = initialChannels.find(
+          c => c.name.toLowerCase().includes('tsports hd')
+        );
+        state.setCurrentChannel(defaultChannel || initialChannels[0]);
+      }
     }
   }, [initialChannels, setChannels]);
 
