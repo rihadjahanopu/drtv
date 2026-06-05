@@ -11,6 +11,13 @@ interface QualityLevel {
 	bitrate?: number;
 }
 
+const getProxiedUrl = (url: string): string => {
+	if (url.startsWith("http://198.195.239.50:8095/")) {
+		return url.replace("http://198.195.239.50:8095/", "/api/live/");
+	}
+	return url;
+};
+
 export default function IPTVPlayer() {
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const hlsRef = useRef<Hls | null>(null);
@@ -95,8 +102,12 @@ export default function IPTVPlayer() {
 					// We are casting, play on Cast device instead of local
 					setIsCasting(true);
 
+					const castUrl = url.startsWith("http://198.195.239.50:8095/")
+						? window.location.origin + getProxiedUrl(url)
+						: url;
+
 					const mediaInfo = new chrome.cast.media.MediaInfo(
-						url,
+						castUrl,
 						"application/x-mpegurl"
 					);
 					if (currentChannel) {
@@ -133,10 +144,11 @@ export default function IPTVPlayer() {
 			setError(null);
 			setPaused(false);
 
-			const isMp4 = url.toLowerCase().endsWith(".mp4");
+			const proxiedUrl = getProxiedUrl(url);
+			const isMp4 = proxiedUrl.toLowerCase().endsWith(".mp4");
 
 			if (isMp4) {
-				video.src = url;
+				video.src = proxiedUrl;
 				video.play().catch((e) => {
 					if (e.name !== "AbortError") {
 						setPaused(true);
@@ -163,7 +175,7 @@ export default function IPTVPlayer() {
 				});
 				hlsRef.current = hls;
 
-				hls.loadSource(url);
+				hls.loadSource(proxiedUrl);
 				hls.attachMedia(video);
 
 				hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
@@ -201,7 +213,7 @@ export default function IPTVPlayer() {
 					}
 				});
 			} else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-				video.src = url;
+				video.src = proxiedUrl;
 				video.play().catch((e) => {
 					if (e.name !== "AbortError") {
 						setPaused(true);
