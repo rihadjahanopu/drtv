@@ -22,14 +22,6 @@ const nextConfig: NextConfig = {
 			},
 		],
 	},
-	async rewrites() {
-		return [
-			{
-				source: "/api/live/:path*",
-				destination: "http://198.195.239.50:8095/:path*", // আপনার আইপি সার্ভার
-			},
-		];
-	},
 	reactCompiler: true,
 	turbopack: {},
 };
