@@ -24,7 +24,7 @@ Built as a **Progressive Web App (PWA)**, DR TV can be installed on desktop and 
 
 ## Live Demo
 
-[Demo for Vercel](https://rihadtv.vercel.app/)
+[Demo for Netlify](https://drtvbd.netlify.app/)
 [Demo for Render](https://drtv.onrender.com/)
 
 ---
